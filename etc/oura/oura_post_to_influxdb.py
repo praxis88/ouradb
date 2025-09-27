@@ -25,8 +25,8 @@ def fetch_data(start, end, datatype, pat_data):
     response = requests.request('GET', url, headers=headers, params=params).json()
 
     if not response["data"]:
-        print("No {} data yet for time window, exiting".format(datatype))
-        exit()
+        print("No {} data yet for time window {}".format(datatype, start.strftime('%Y-%m-%d')))
+        return None
 
     resp = response["data"][0]
 
@@ -59,10 +59,9 @@ def get_data_one_day(date,pat):
     sleep_data = fetch_data(start_date,end_date,'sleep',pat)
     readiness_data = fetch_data(start_date,end_date,'daily_readiness',pat)
  
-    if sleep_data == None:
-        print("No data, exiting")
-        exit()
-
+    if sleep_data is None or readiness_data is None:
+        print("No complete data for {}, skipping this date".format(date))
+        return None
 
     # Clean out array type data
     sleep_data.pop('heart_rate', None)
@@ -74,10 +73,6 @@ def get_data_one_day(date,pat):
     sleep_data.pop('readiness', None)
     readiness_data.pop('contributors', None)
     
- 
-
-
-
     # Merge sleep and readiness data
     data = sleep_data
     data.update(readiness_data)
@@ -123,11 +118,19 @@ else:
 
 
 # Go through all days between start and end dates
+processed_count = 0
+skipped_count = 0
 
 while start_date <= end_date:
     data = get_data_one_day(end_date.strftime('%Y-%m-%d'),pat)
-    write_api.write(bucket=bucket, org=org, record=data)
-    print(end_date)
-    #print(json.dumps(data, indent=4))
+    if data is not None:
+        write_api.write(bucket=bucket, org=org, record=data)
+        print("Processed: {}".format(end_date.strftime('%Y-%m-%d')))
+        processed_count += 1
+        #print(json.dumps(data, indent=4))
+    else:
+        print("Skipped: {} (no data)".format(end_date.strftime('%Y-%m-%d')))
+        skipped_count += 1
     end_date = end_date - timedelta(days=1)
 
+print("\nSummary: Processed {} days, skipped {} days".format(processed_count, skipped_count))
