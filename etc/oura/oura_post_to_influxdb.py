@@ -8,14 +8,18 @@ import json
 import re
 
 #Influxdb2 info
-INFLUXDB_TOKEN = open('/etc/oura/INFLUXDBTOKEN.txt','r').read(88)
-org = os.getenv('INFLUXDB_ORG', 'my-org')
-bucket = os.getenv('INFLUXDB_BUCKET', 'my-bucket')
-url = "http://2.2.2.3:8086"
+# INFLUXDB_TOKEN = open('/etc/oura/INFLUXDBTOKEN.txt','r').read(88)
+#org = os.getenv('INFLUXDB_ORG', 'my-org')
+org="Christopher"
+bucket="testbucket"
+INFLUXDB_TOKEN = open('INFLUXDBTOKEN.txt','r').read(88)
+pat = open('PAT.txt','r').read(32)
+#bucket = os.getenv('INFLUXDB_BUCKET', 'my-bucket')
+url = "http://192.168.42.107:8086"
 client_ouradb = influxdb_client.InfluxDBClient(url=url, token=INFLUXDB_TOKEN, org=org)
 write_api = client_ouradb.write_api(write_options=SYNCHRONOUS)
 
-pat = open('/etc/oura/PAT.txt','r').read(32)
+# pat = open('/etc/oura/PAT.txt','r').read(32)
 
 
 def fetch_data(start, end, datatype, pat_data):
@@ -58,8 +62,9 @@ def get_data_one_day(date,pat):
 
     sleep_data = fetch_data(start_date,end_date,'sleep',pat)
     readiness_data = fetch_data(start_date,end_date,'daily_readiness',pat)
+    activity_data = fetch_data(start_date,end_date,'daily_activity',pat)
  
-    if sleep_data is None or readiness_data is None:
+    if sleep_data is None or readiness_data is None or activity_data is None:
         print("No complete data for {}, skipping this date".format(date))
         return None
 
@@ -72,10 +77,13 @@ def get_data_one_day(date,pat):
     sleep_data.pop('type', None)
     sleep_data.pop('readiness', None)
     readiness_data.pop('contributors', None)
+    activity_data.pop('contributors', None)
+    activity_data.pop('met', None)
     
     # Merge sleep and readiness data
     data = sleep_data
     data.update(readiness_data)
+    data.update(activity_data)
 
     post_data = [{"measurement": "oura_measurements",
              "time": data['bedtime_end'],
