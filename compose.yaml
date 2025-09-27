@@ -6,6 +6,9 @@ services:
     networks:
       ouranet:
         ipv4_address: 2.2.2.2
+    environment:
+      - INFLUXDB_ORG=Christopher
+      - INFLUXDB_BUCKET=oura
 
   influxdb2:
     container_name: influxdb2
