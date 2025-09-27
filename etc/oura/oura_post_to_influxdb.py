@@ -8,14 +8,11 @@ import json
 import re
 
 #Influxdb2 info
-# INFLUXDB_TOKEN = open('/etc/oura/INFLUXDBTOKEN.txt','r').read(88)
-#org = os.getenv('INFLUXDB_ORG', 'my-org')
-org="Christopher"
-bucket="testbucket"
-INFLUXDB_TOKEN = open('INFLUXDBTOKEN.txt','r').read(88)
-pat = open('PAT.txt','r').read(32)
-#bucket = os.getenv('INFLUXDB_BUCKET', 'my-bucket')
-url = "http://192.168.42.107:8086"
+INFLUXDB_TOKEN = open('/etc/oura/INFLUXDBTOKEN.txt','r').read(88)
+org = os.getenv('INFLUXDB_ORG', 'my-org')
+pat = open('/etc/oura/PAT.txt','r').read(32)
+bucket = os.getenv('INFLUXDB_BUCKET', 'my-bucket')
+url = "http://2.2.2.3:8086"
 client_ouradb = influxdb_client.InfluxDBClient(url=url, token=INFLUXDB_TOKEN, org=org)
 write_api = client_ouradb.write_api(write_options=SYNCHRONOUS)
 
