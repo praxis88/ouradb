@@ -15,8 +15,30 @@ bucket = os.getenv('INFLUXDB_BUCKET', 'my-bucket')
 url = "http://2.2.2.3:8086"
 client_ouradb = influxdb_client.InfluxDBClient(url=url, token=INFLUXDB_TOKEN, org=org)
 write_api = client_ouradb.write_api(write_options=SYNCHRONOUS)
+query_api = client_ouradb.query_api()
 
 # pat = open('/etc/oura/PAT.txt','r').read(32)
+
+
+def data_exists_in_influx(date_str):
+    """Check if data already exists for this date in InfluxDB"""
+    # Parse the date and create a range for the entire day
+    date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+    start = date_obj.strftime('%Y-%m-%dT00:00:00Z')
+    stop = (date_obj + timedelta(days=1)).strftime('%Y-%m-%dT00:00:00Z')
+    
+    query = f'''
+    from(bucket: "{bucket}")
+        |> range(start: {start}, stop: {stop})
+        |> filter(fn: (r) => r._measurement == "oura_measurements")
+        |> limit(n: 1)
+    '''
+    try:
+        result = query_api.query(query)
+        return len(result) > 0
+    except Exception as e:
+        print(f"Warning: Error checking InfluxDB for {date_str}: {e}")
+        return False
 
 
 def fetch_data(start, end, datatype, pat_data):
@@ -93,6 +115,7 @@ def get_data_one_day(date,pat):
 parser = argparse.ArgumentParser(description='Post Oura data to Influxdb. Omit --start and --end to process data only for today.')
 parser.add_argument('--start', help="Start date of query. Format: YYYY-MM-DD")
 parser.add_argument('--end', help="End date of query. Format: YYYY-MM-DD")
+parser.add_argument('--force', action='store_true', help="Force reprocessing of data even if it already exists in InfluxDB")
 args = parser.parse_args()
 
 if (args.end and not args.start) or (args.start and not args.end):
@@ -125,17 +148,32 @@ else:
 # Go through all days between start and end dates
 processed_count = 0
 skipped_count = 0
+already_exists_count = 0
 
 while start_date <= end_date:
-    data = get_data_one_day(end_date.strftime('%Y-%m-%d'),pat)
-    if data is not None:
-        write_api.write(bucket=bucket, org=org, record=data)
-        print("Processed: {}".format(end_date.strftime('%Y-%m-%d')))
-        processed_count += 1
-        #print(json.dumps(data, indent=4))
-    else:
-        print("Skipped: {} (no data)".format(end_date.strftime('%Y-%m-%d')))
+    date_str = end_date.strftime('%Y-%m-%d')
+    
+    # Check if data already exists (unless --force flag is used or running for today only)
+    if not args.force and not only_today and data_exists_in_influx(date_str):
+        print("Skipped: {} (already exists in InfluxDB)".format(date_str))
+        already_exists_count += 1
         skipped_count += 1
+    else:
+        data = get_data_one_day(date_str, pat)
+        if data is not None:
+            write_api.write(bucket=bucket, org=org, record=data)
+            print("Processed: {}".format(date_str))
+            processed_count += 1
+            #print(json.dumps(data, indent=4))
+        else:
+            print("Skipped: {} (no data from Oura)".format(date_str))
+            skipped_count += 1
+        
+        # Add small delay for bulk processing to avoid rate limits
+        if not only_today and start_date < end_date:
+            time.sleep(1)
+    
     end_date = end_date - timedelta(days=1)
 
-print("\nSummary: Processed {} days, skipped {} days".format(processed_count, skipped_count))
+print("\nSummary: Processed {} days, skipped {} days ({} already existed)".format(
+    processed_count, skipped_count, already_exists_count))
