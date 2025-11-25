@@ -12,7 +12,7 @@ INFLUXDB_TOKEN = open('/etc/oura/INFLUXDBTOKEN.txt','r').read(88)
 org = os.getenv('INFLUXDB_ORG', 'my-org')
 pat = open('/etc/oura/PAT.txt','r').read(32)
 bucket = os.getenv('INFLUXDB_BUCKET', 'my-bucket')
-url = "http://2.2.2.3:8086"
+url = os.getenv('INFLUXDB_CONTAINERNAME', 'influxdb2')
 client_ouradb = influxdb_client.InfluxDBClient(url=url, token=INFLUXDB_TOKEN, org=org)
 write_api = client_ouradb.write_api(write_options=SYNCHRONOUS)
 query_api = client_ouradb.query_api()
