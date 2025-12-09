@@ -12,7 +12,8 @@ INFLUXDB_TOKEN = open('/etc/oura/INFLUXDBTOKEN.txt','r').read(88)
 org = os.getenv('INFLUXDB_ORG', 'my-org')
 pat = open('/etc/oura/PAT.txt','r').read(32)
 bucket = os.getenv('INFLUXDB_BUCKET', 'my-bucket')
-url = "http://2.2.2.3:8086"
+containername = os.getenv('INFLUXDB_CONTAINERNAME', 'influxdb2')
+url = f"http://{containername}:8086"
 client_ouradb = influxdb_client.InfluxDBClient(url=url, token=INFLUXDB_TOKEN, org=org)
 write_api = client_ouradb.write_api(write_options=SYNCHRONOUS)
 query_api = client_ouradb.query_api()
@@ -26,7 +27,7 @@ def data_exists_in_influx(date_str):
     date_obj = datetime.strptime(date_str, '%Y-%m-%d')
     start = date_obj.strftime('%Y-%m-%dT00:00:00Z')
     stop = (date_obj + timedelta(days=1)).strftime('%Y-%m-%dT00:00:00Z')
-    
+
     query = f'''
     from(bucket: "{bucket}")
         |> range(start: {start}, stop: {stop})
@@ -55,7 +56,7 @@ def fetch_data(start, end, datatype, pat_data):
 
     #If we're looking for sleep...cycles through the items in response dictionary, finds the one that contains long_sleep, sets the active resp to that section. Otherwise naps make amess of the data.
     indexstart = 0
-    indexceiling = len(response["data"]) - 1 
+    indexceiling = len(response["data"]) - 1
     if datatype == 'sleep':
         while indexstart <= indexceiling:
             resp2 = response["data"][indexstart]
@@ -63,13 +64,13 @@ def fetch_data(start, end, datatype, pat_data):
                 if v == "long_sleep":
                     resp = resp2
             indexstart+= 1
-    
+
     #Adds the contributors section at level 0 of our readiness json. Includes stats like hrv and sleep balance
     if datatype == 'daily_readiness':
         resp2 = response["data"][0]["contributors"]
         resp.pop('contributors', None)
         resp.update(resp2)
-        
+
     # All data should be consistent in influxdb, so turn ints to floats
     resp = {k:float(v) if type(v) == int else v for k,v in resp.items()}
     return resp
@@ -77,12 +78,12 @@ def fetch_data(start, end, datatype, pat_data):
 def get_data_one_day(date,pat):
     end_date=datetime.strptime(date,'%Y-%m-%d')
     start_date=end_date - timedelta(days=1)
-    
+
 
     sleep_data = fetch_data(start_date,end_date,'sleep',pat)
     readiness_data = fetch_data(start_date,end_date,'daily_readiness',pat)
     activity_data = fetch_data(start_date,end_date,'daily_activity',pat)
- 
+
     if sleep_data is None or readiness_data is None or activity_data is None:
         print("No complete data for {}, skipping this date".format(date))
         return None
@@ -98,7 +99,7 @@ def get_data_one_day(date,pat):
     readiness_data.pop('contributors', None)
     activity_data.pop('contributors', None)
     activity_data.pop('met', None)
-    
+
     # Merge sleep and readiness data
     data = sleep_data
     data.update(readiness_data)
@@ -108,7 +109,7 @@ def get_data_one_day(date,pat):
              "time": data['bedtime_end'],
              "fields": data
     },]
-    
+
     return post_data
 
 
@@ -123,7 +124,7 @@ if (args.end and not args.start) or (args.start and not args.end):
     exit()
 
 date_pattern = re.compile("^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
-    
+
 if args.start:
     if not date_pattern.match(args.start):
         print("Start date format invalid. Use format: YYYY-MM-DD")
@@ -152,7 +153,7 @@ already_exists_count = 0
 
 while start_date <= end_date:
     date_str = end_date.strftime('%Y-%m-%d')
-    
+
     # Check if data already exists (unless --force flag is used or running for today only)
     if not args.force and not only_today and data_exists_in_influx(date_str):
         print("Skipped: {} (already exists in InfluxDB)".format(date_str))
@@ -168,11 +169,11 @@ while start_date <= end_date:
         else:
             print("Skipped: {} (no data from Oura)".format(date_str))
             skipped_count += 1
-        
+
         # Add small delay for bulk processing to avoid rate limits
         if not only_today and start_date < end_date:
             time.sleep(1)
-    
+
     end_date = end_date - timedelta(days=1)
 
 print("\nSummary: Processed {} days, skipped {} days ({} already existed)".format(
