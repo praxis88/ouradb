@@ -1,16 +1,19 @@
-version: '3'
 services:
   ourapython:
-    container_name: ourainjector
+    restart: unless-stopped
+    container_name: ourapython
     image: ourapython:latest
     networks:
       ouranet:
         ipv4_address: 2.2.2.2
-    environment:
-      - INFLUXDB_ORG=Christopher
-      - INFLUXDB_BUCKET=oura
+    depends_on:
+      influxdb2:
+        condition: service_healthy
+    env_file:
+      - stack.env
 
   influxdb2:
+    restart: unless-stopped
     container_name: influxdb2
     image: influxdb:2.7.3-alpine
     networks:
@@ -20,14 +23,14 @@ services:
       - "8086:8086"
     volumes:
       - influxdb:/var/lib/influxdb2
-    environment:
-      - DOCKER_INFLUXDB_INIT_MODE=setup
-      - DOCKER_INFLUXDB_INIT_USERNAME=root
-      - DOCKER_INFLUXDB_INIT_PASSWORD=password
-      - DOCKER_INFLUXDB_INIT_ORG=my-org
-      - DOCKER_INFLUXDB_INIT_BUCKET=my-bucket
-      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=hkMQ225Qju91YaKm6wq2lo1r3-0J_dfF85j7Ff3trjCEkmCFIc-yzLEZubRcB7mL_vXYMpIilp7yrttYYRAiVA==
-      
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:8086/health | grep -q '\"status\":\"pass\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    env_file:
+      - stack.env
   grafana:
     container_name: grafana
     image: grafana/grafana:latest
@@ -39,12 +42,16 @@ services:
       - "3000:3000"
     volumes:
       - grafana:/var/lib/grafana
+    depends_on:
+      influxdb2:
+        condition: service_healthy
+
 
 volumes: 
- influxdb:
-   external: true
- grafana:
-   external: true
+  influxdb:
+    external: true
+  grafana:
+    external: true
  
 
 networks:

@@ -1,24 +1,29 @@
-FROM debian:bookworm-slim
+FROM python:3.12-slim-bookworm
 
 WORKDIR /root
 
-RUN apt update 
-RUN apt upgrade -y 
-RUN apt install -y apt-utils ca-certificates curl htop libfontconfig vim net-tools supervisor wget gnupg python3 python3-pip nodejs cron anacron procps
+RUN apt-get update && apt-get install -y \
+apt-utils \
+ca-certificates \
+curl \
+libfontconfig \
+gnupg \
+nodejs \
+cron \
+procps && \
+apt clean && rm -rf /var/lib/apt/lists/*
 
-#Setup Supervisord
-RUN mkdir -p /var/log/supervisor 
-RUN mkdir -p /etc/supervisor/conf.d
+# Copy and install Python dependencies
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+#Copy Files
 COPY etc/ /etc
+COPY entrypoint.sh /entrypoint.sh
 
-# Configure Oura API script
-RUN pip3 install influxdb-client requests --break-system-packages
-RUN chmod +x /etc/oura/oura_post_to_influxdb.py
-RUN chmod +x /etc/oura/oura_query.py
-RUN chmod +x /etc/cron.daily/oura_post
+#Make executables
+RUN chmod +x /etc/oura/oura_post_to_influxdb.py \
+             /etc/cron.daily/oura_post \
+             /entrypoint.sh
 
-#Cleanup
-RUN apt clean
-RUN rm -rf /var/lib/apt/lists/*
-
-CMD ["/usr/bin/supervisord"]
+CMD ["/entrypoint.sh"]
