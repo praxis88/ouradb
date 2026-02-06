@@ -36,15 +36,15 @@ else:
 
 # Process each date in the range
 while start_date <= end_date:
-    # # Check if data for today already exists in InfluxDB before fetching from Oura API
-    # if utils.data_exists_in_influx(start_date.strftime('%Y-%m-%d'), query_api, INFLUXDB_BUCKET):
-    #     print(f"Data for {start_date} already exists in InfluxDB, skipping.")
-    # else:
-    # #get the data for today
-    data = utils.get_data_one_day(start_date,end_date,OURA_CLOUD_PAT)
-    if data is not None:
-        write_api.write(bucket=INFLUXDB_BUCKET, org=INFLUXDB_ORG, record=data)
-        print("Processed: {}".format(start_date))
-        print(json.dumps(data, indent=4))
+    # Check if data for today already exists in InfluxDB before fetching from Oura API
+    if utils.data_exists_in_influx(start_date.strftime('%Y-%m-%d'), query_api, INFLUXDB_BUCKET):
+        print(f"Data for {start_date} already exists in InfluxDB, skipping.")
+    else:
+    #get the data for today
+        data = utils.get_data_one_day(start_date,end_date,OURA_CLOUD_PAT)
+        if data is not None:
+            write_api.write(bucket=INFLUXDB_BUCKET, org=INFLUXDB_ORG, record=data)
+            print("Processed: {}".format(start_date))
+            #print(json.dumps(data, indent=4))
     
     start_date += timedelta(days=1)

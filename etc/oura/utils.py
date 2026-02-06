@@ -3,11 +3,11 @@ from datetime import datetime, timedelta
 import json
 
 
-def data_exists_in_influx(yesterday, query_api, INFLUXDB_BUCKET):
+def data_exists_in_influx(end_date, query_api, INFLUXDB_BUCKET):
     """Check if data already exists for this date in InfluxDB"""
     # The data is timestamped with bedtime_end, which is typically the morning
     # of the date we're querying. We need to check a wider range to catch it.
-    date_obj = datetime.strptime(yesterday, '%Y-%m-%d')
+    date_obj = datetime.strptime(end_date, '%Y-%m-%d')
     
     # Check from the previous day to the next day to catch bedtime_end times
     start = (date_obj - timedelta(days=1)).strftime('%Y-%m-%dT00:00:00Z')
@@ -18,7 +18,7 @@ def data_exists_in_influx(yesterday, query_api, INFLUXDB_BUCKET):
         |> range(start: time(v: "{start}"), stop: time(v: "{stop}"))
         |> filter(fn: (r) => r["_measurement"] == "oura_measurements")
         |> filter(fn: (r) => r["_field"] == "day")
-        |> filter(fn: (r) => r["_value"] == "{yesterday}")
+        |> filter(fn: (r) => r["_value"] == "{end_date}")
         |> limit(n: 1)
     '''
         
@@ -29,7 +29,7 @@ def data_exists_in_influx(yesterday, query_api, INFLUXDB_BUCKET):
         has_data = any(len(table.records) > 0 for table in result)
         return has_data
     except Exception as e:
-        print(f"Warning: Error checking InfluxDB for {yesterday}: {e}")
+        print(f"Warning: Error checking InfluxDB for {end_date}: {e}")
         import traceback
         traceback.print_exc()
         return False
