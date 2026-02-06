@@ -35,7 +35,7 @@ docker volume create grafana
 ## Third Step: setup stack.env
 
 Make a stack.env to go alongside your compose file. Change any of these settings, and add your Oura Access Token
-
+```
 #INFLUXDB INIT VARS, these only matter when influxdb is new.
 DOCKER_INFLUXDB_INIT_MODE=setup
 DOCKER_INFLUXDB_INIT_USERNAME=root
@@ -50,7 +50,7 @@ INFLUXDB_BUCKET=my-bucket
 #Tokens
 INFLUXDB_TOKEN=hkMQ225Qju91YaKm6wq2lo1r3-0J_dfF85j7Ff3trjCEkmCFIc-yzLEZubRcB7mL_vXYMpIilp7yrttYYRAiVA==
 OURA_CLOUD_PAT=
-
+```
 To start the stack, run this command inside the directory where the compose and stack files live.
 
 ```sh
