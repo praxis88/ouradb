@@ -2,9 +2,15 @@ import requests
 from datetime import datetime, timedelta
 import json
 
+class PrintTimeStamp():
+   def write(self,x):
+       ts = str(datetime.now())
+       print("<{}> {}".format(str(ts),x))
 
 def data_exists_in_influx(end_date, query_api, INFLUXDB_BUCKET):
     """Check if data already exists for this date in InfluxDB"""
+    pts = PrintTimeStamp()
+    
     # The data is timestamped with bedtime_end, which is typically the morning
     # of the date we're querying. We need to check a wider range to catch it.
     date_obj = datetime.strptime(end_date, '%Y-%m-%d')
@@ -25,17 +31,19 @@ def data_exists_in_influx(end_date, query_api, INFLUXDB_BUCKET):
     try:
         result = query_api.query(query)
         for table in result:
-            print(f"Table has {len(table.records)} records")
+            pts.write(f"Table has {len(table.records)} records")
         has_data = any(len(table.records) > 0 for table in result)
         return has_data
     except Exception as e:
-        print(f"Warning: Error checking InfluxDB for {end_date}: {e}")
+        pts.write(f"Warning: Error checking InfluxDB for {end_date}: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 
 def fetch_data(start_date,end_date,datatype,OURA_CLOUD_PAT):
+    pts = PrintTimeStamp()
+    
     end_date = start_date + timedelta(days=1)
     url = f"https://api.ouraring.com/v2/usercollection/{datatype}"
     headers = {"Authorization": f"Bearer {OURA_CLOUD_PAT}"}
@@ -43,7 +51,7 @@ def fetch_data(start_date,end_date,datatype,OURA_CLOUD_PAT):
     response = requests.request('GET', url, headers=headers, params=params).json()
 
     if not response["data"]:
-        print("No {} data yet for time window {}".format(datatype, start_date))
+        pts.write("No {} data yet for time window {}".format(datatype, start_date))
         return None
 
     resp = response["data"][0]
@@ -70,12 +78,14 @@ def fetch_data(start_date,end_date,datatype,OURA_CLOUD_PAT):
     return resp
 
 def get_data_one_day(start_date,end_date,OURA_CLOUD_PAT):
+    pts = PrintTimeStamp()
+    
     sleep_data = fetch_data(start_date,end_date,'sleep',OURA_CLOUD_PAT)
     readiness_data = fetch_data(start_date,end_date,'daily_readiness',OURA_CLOUD_PAT)
     activity_data = fetch_data(start_date,end_date,'daily_activity',OURA_CLOUD_PAT)
 
     if sleep_data is None or readiness_data is None or activity_data is None:
-        print("No complete data for {}, skipping this date".format(start_date))
+        pts.write("No complete data for {}, skipping this date".format(start_date))
         return None
 
     # Clean out array type data
