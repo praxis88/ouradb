@@ -1,0 +1,6 @@
+# /etc/cron.d/oura_post
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+# Run oura_post daily at 9am. Redirect output to the Docker logs.
+0 9 * * * root /usr/local/bin/python3 /etc/oura/oura_post_to_influxdb.py > /proc/1/fd/1 2>&1
