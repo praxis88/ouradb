@@ -23,7 +23,7 @@ COPY entrypoint.sh /entrypoint.sh
 
 #Make executables
 RUN chmod +x /etc/oura/oura_post_to_influxdb.py \
-             /etc/cron.daily/oura_post \
+             /etc/cron.d/oura_post \
              /entrypoint.sh
 
 CMD ["/entrypoint.sh"]
