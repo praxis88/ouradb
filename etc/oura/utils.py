@@ -43,8 +43,6 @@ def data_exists_in_influx(end_date, query_api, INFLUXDB_BUCKET):
 
 def fetch_data(start_date,end_date,datatype,OURA_CLOUD_PAT):
     pts = PrintTimeStamp()
-    
-    end_date = start_date + timedelta(days=1)
     url = f"https://api.ouraring.com/v2/usercollection/{datatype}"
     headers = {"Authorization": f"Bearer {OURA_CLOUD_PAT}"}
     params = {"start_date": f"{start_date}", 'end_date': f"{end_date}"}
@@ -93,6 +91,7 @@ def get_data_one_day(start_date,end_date,OURA_CLOUD_PAT):
     sleep_data.pop('hrv', None)
     sleep_data.pop('movement_30_sec', None)
     sleep_data.pop('sleep_phase_5_min', None)
+    sleep_data.pop('sleep_phase_30_sec', None)
     sleep_data.pop('low_battery_alert', None)
     sleep_data.pop('type', None)
     sleep_data.pop('readiness', None)

@@ -31,14 +31,15 @@ if args.start_date and args.end_date:
     start_date = datetime.strptime(args.start_date, '%Y-%m-%d').date()
     end_date = datetime.strptime(args.end_date, '%Y-%m-%d').date()
 else:
-    start_date = date.today() - timedelta(days=1)
-    end_date = date.today()
+    start_date = date.today()
+    end_date = start_date + timedelta(days=1)
+    
 
 # Initialize PrintTimeStamp
 pts = utils.PrintTimeStamp()
 
 # Process each date in the range
-while start_date <= end_date:
+while start_date < end_date:
     # Check if data for today already exists in InfluxDB before fetching from Oura API
     if utils.data_exists_in_influx(start_date.strftime('%Y-%m-%d'), query_api, INFLUXDB_BUCKET):
         pts.write(f"Data for {start_date} already exists in InfluxDB, skipping.")
@@ -48,6 +49,6 @@ while start_date <= end_date:
         if data is not None:
             write_api.write(bucket=INFLUXDB_BUCKET, org=INFLUXDB_ORG, record=data)
             pts.write("Processed: {}".format(start_date))
-            #print(json.dumps(data, indent=4))
+            print(json.dumps(data, indent=4))
     
     start_date += timedelta(days=1)
