@@ -20,12 +20,12 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt
 #Copy Files
 COPY etc/ /etc
 COPY entrypoint.sh /entrypoint.sh
-COPY usr/local/bin/run_oura.sh /usr/local/bin/run_oura.sh
+COPY usr/local/bin/ourawrapper.sh /usr/local/bin/ourawrapper.sh
 
 #Make executables
 RUN chmod +x /etc/oura/oura_post_to_influxdb.py \
-             /entrypoint.sh \
-	     /usr/local/bin/run_oura.sh
+            /entrypoint.sh \
+	        /usr/local/bin/ourawrapper.sh
 
 RUN chmod 644 /etc/cron.d/oura_post && chown root:root /etc/cron.d/oura_post
 

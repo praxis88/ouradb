@@ -3,5 +3,5 @@ SHELL=/bin/sh
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 
 # Run oura_post daily at 9am. Redirect output to the Docker logs.
-0 9 * * * root /usr/local/bin/run_oura.sh > /proc/1/fd/1 2>&1
+0 9 * * * root /usr/local/bin/ourawrapper.sh > /proc/1/fd/1 2>&1
 
