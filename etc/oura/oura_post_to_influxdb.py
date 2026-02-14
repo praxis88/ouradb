@@ -49,6 +49,6 @@ while start_date < end_date:
         if data is not None:
             write_api.write(bucket=INFLUXDB_BUCKET, org=INFLUXDB_ORG, record=data)
             pts.write("Processed: {}".format(start_date))
-            print(json.dumps(data, indent=4))
+            #print(json.dumps(data, indent=4))
     
     start_date += timedelta(days=1)
